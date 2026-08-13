@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HeartPulse, PlusCircle, ClipboardList, Settings } from 'lucide-react-native';
 
 import DashboardScreen from '../screens/DashboardScreen';
@@ -10,6 +11,8 @@ import SettingsScreen from '../screens/SettingsScreen';
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -23,16 +26,18 @@ export default function TabNavigator() {
         },
         tabBarActiveTintColor: '#0F52BA',
         tabBarInactiveTintColor: '#64748B',
+        tabBarAllowFontScaling: true,
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E2E8F0',
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 10,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
+          paddingBottom: 2,
         },
         tabBarIcon: ({ color, size }) => {
           if (route.name === 'Inicio') {

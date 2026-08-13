@@ -8,9 +8,9 @@ import {
   Image,
   Alert,
   Modal,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Calendar,
   ChevronDown,
@@ -32,6 +32,7 @@ import { formatDate } from '../utils/formatters';
 
 export default function HistoryScreen() {
   const { records, deleteRecord } = useVitals();
+  const insets = useSafeAreaInsets();
 
   const [expandedId, setExpandedId] = useState(null);
   const [modalImageUri, setModalImageUri] = useState(null);
@@ -362,7 +363,7 @@ export default function HistoryScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 0) }]}>
       {/* Encabezado con Botón de Exportar / Compartir */}
       <View style={styles.topHeader}>
         <Text style={styles.topHeaderTitle}>Historial de Registros</Text>
@@ -387,11 +388,12 @@ export default function HistoryScreen() {
         data={records}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={
+        contentContainerStyle={[
           records && records.length > 0
             ? styles.listContent
-            : styles.emptyListContent
-        }
+            : styles.emptyListContent,
+          { paddingBottom: Math.max(insets.bottom + 20, 32) },
+        ]}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <ClipboardList size={56} color="#CBD5E1" />
@@ -426,7 +428,7 @@ export default function HistoryScreen() {
           )}
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, Image as ImageIcon, Trash2, Save, Sparkles, AlertTriangle } from 'lucide-react-native';
 import { useVitals } from '../context/VitalsContext';
@@ -19,6 +20,7 @@ import { analyzeMedicalDeviceImage } from '../services/ai';
 
 export default function NewRecordScreen({ navigation }) {
   const { apiKey, addRecord } = useVitals();
+  const insets = useSafeAreaInsets();
 
   const [selectedImage, setSelectedImage] = useState(null); // { uri, base64 }
   const [analyzing, setAnalyzing] = useState(false);
@@ -201,9 +203,20 @@ export default function NewRecordScreen({ navigation }) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.contentContainer,
+          {
+            paddingTop: Math.max(insets.top, 16),
+            paddingBottom: Math.max(insets.bottom + 20, 32),
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Banner de aviso API Key si no está cargada */}
         {(!apiKey || !apiKey.trim()) && (
           <TouchableOpacity

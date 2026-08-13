@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Key,
   Eye,
@@ -27,6 +28,7 @@ import { useVitals } from '../context/VitalsContext';
 
 export default function SettingsScreen() {
   const { apiKey, notificationSettings, saveApiKey, updateNotificationSettings } = useVitals();
+  const insets = useSafeAreaInsets();
 
   const [inputApiKey, setInputApiKey] = useState(apiKey || '');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -109,9 +111,20 @@ export default function SettingsScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.contentContainer,
+          {
+            paddingTop: Math.max(insets.top, 16),
+            paddingBottom: Math.max(insets.bottom + 20, 32),
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Sección API Key de Gemini */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Activity,
   Heart,
@@ -48,11 +49,18 @@ const getBadgeInfo = (status) => {
 
 export default function DashboardScreen({ navigation }) {
   const { records, notificationSettings } = useVitals();
+  const insets = useSafeAreaInsets();
 
   const latestRecord = records && records.length > 0 ? records[0] : null;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.contentContainer,
+        { paddingTop: Math.max(insets.top, 16) },
+      ]}
+    >
       {/* Header Banner */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Panel de Salud</Text>
