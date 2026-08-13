@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import {
@@ -21,25 +22,32 @@ export const isExpoGo = () => {
 };
 
 // Configurar el handler global para notificaciones de forma segura
-try {
-  if (isExpoGo()) {
-    console.warn('Expo Go detectado: Las notificaciones locales requieren un Development Build en Expo SDK 53+.');
-  } else {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
+/**
+ * Inicializa/crea el canal por defecto de notificaciones en Android
+ */
+export const setupNotificationChannel = async () => {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Recordatorios Médicos',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+      enableVibrate: true,
     });
   }
-} catch (error) {
-  console.warn('Error al configurar el handler de notificaciones:', error?.message || error);
-}
+};
 
 /**
  * Solicita los permisos necesarios para emitir notificaciones locales
- * @returns {Promise<boolean>} Indización de si los permisos fueron concedidos
+ * @returns {Promise<boolean>} Indicación de si los permisos fueron concedidos
  */
 export const requestNotificationPermissions = async () => {
   if (isExpoGo()) {
@@ -48,6 +56,8 @@ export const requestNotificationPermissions = async () => {
   }
 
   try {
+    await setupNotificationChannel();
+
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -73,17 +83,19 @@ const parseTime = (time, defaultHour = 8, defaultMinute = 0) => {
       const hour = parseInt(parts[0], 10);
       const minute = parseInt(parts[1], 10);
       return {
-        hour: !isNaN(hour) ? hour : defaultHour,
-        minute: !isNaN(minute) ? minute : defaultMinute,
+        hour: !isNaN(hour) ? Number(hour) : Number(defaultHour),
+        minute: !isNaN(minute) ? Number(minute) : Number(defaultMinute),
       };
     }
   } else if (time && typeof time === 'object') {
+    const hour = parseInt(time.hour, 10);
+    const minute = parseInt(time.minute, 10);
     return {
-      hour: typeof time.hour === 'number' ? time.hour : defaultHour,
-      minute: typeof time.minute === 'number' ? time.minute : defaultMinute,
+      hour: !isNaN(hour) ? Number(hour) : Number(defaultHour),
+      minute: !isNaN(minute) ? Number(minute) : Number(defaultMinute),
     };
   }
-  return { hour: defaultHour, minute: defaultMinute };
+  return { hour: Number(defaultHour), minute: Number(defaultMinute) };
 };
 
 /**
@@ -110,8 +122,6 @@ export const scheduleDailyAlerts = async (morningTime = '08:00', eveningTime = '
     const morning = parseTime(morningTime, 8, 0);
     const evening = parseTime(eveningTime, 20, 0);
 
-    const triggerType = Notifications.SchedulableTriggerInputTypes?.DAILY || 'daily';
-
     // Programar alerta del turno mañana
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -120,10 +130,10 @@ export const scheduleDailyAlerts = async (morningTime = '08:00', eveningTime = '
         sound: true,
       },
       trigger: {
-        type: triggerType,
-        hour: morning.hour,
-        minute: morning.minute,
+        hour: Number(morning.hour),
+        minute: Number(morning.minute),
         repeats: true,
+        channelId: 'default',
       },
     });
 
@@ -135,10 +145,10 @@ export const scheduleDailyAlerts = async (morningTime = '08:00', eveningTime = '
         sound: true,
       },
       trigger: {
-        type: triggerType,
-        hour: evening.hour,
-        minute: evening.minute,
+        hour: Number(evening.hour),
+        minute: Number(evening.minute),
         repeats: true,
+        channelId: 'default',
       },
     });
 
@@ -198,7 +208,6 @@ export const updateMedicationNotifications = async (medicationsList = []) => {
     }
 
     const newNotificationIds = [];
-    const triggerType = Notifications.SchedulableTriggerInputTypes?.DAILY || 'daily';
 
     // 2. Programar notificaciones para cada medicamento
     for (const med of medicationsList) {
@@ -230,8 +239,8 @@ export const updateMedicationNotifications = async (medicationsList = []) => {
       }
 
       for (let i = 0; i < tomas; i++) {
-        const horaToma = (horaInicio + i * frecuencia) % 24;
-        const minutoToma = minutoInicio % 60;
+        const horaToma = Number((horaInicio + i * frecuencia) % 24);
+        const minutoToma = Number(minutoInicio % 60);
 
         const notifId = await Notifications.scheduleNotificationAsync({
           content: {
@@ -240,10 +249,10 @@ export const updateMedicationNotifications = async (medicationsList = []) => {
             sound: true,
           },
           trigger: {
-            type: triggerType,
-            hour: horaToma,
-            minute: minutoToma,
+            hour: Number(horaToma),
+            minute: Number(minutoToma),
             repeats: true,
+            channelId: 'default',
           },
         });
 

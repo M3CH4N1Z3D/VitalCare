@@ -6,23 +6,30 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 import { VitalsProvider } from './src/context/VitalsContext';
 import TabNavigator from './src/navigation/TabNavigator';
+import { setupNotificationChannel } from './src/services/notifications';
 
 export default function App() {
   useEffect(() => {
-    try {
-      const isExpoGo =
-        Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
-        Constants.executionEnvironment === 'storeClient' ||
-        Constants.appOwnership === 'expo';
+    const initNotifications = async () => {
+      try {
+        const isExpoGo =
+          Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+          Constants.executionEnvironment === 'storeClient' ||
+          Constants.appOwnership === 'expo';
 
-      if (isExpoGo) {
-        console.warn(
-          'VitalCare se está ejecutando en Expo Go. Las funciones de notificaciones requieren un Development Build.'
-        );
+        if (isExpoGo) {
+          console.warn(
+            'VitalCare se está ejecutando en Expo Go. Las funciones de notificaciones requieren un Development Build.'
+          );
+        } else {
+          await setupNotificationChannel();
+        }
+      } catch (error) {
+        console.warn('Error al verificar el entorno o configurar notificaciones:', error);
       }
-    } catch (error) {
-      console.warn('Error al verificar el entorno de ejecución:', error);
-    }
+    };
+
+    initNotifications();
   }, []);
 
   return (
