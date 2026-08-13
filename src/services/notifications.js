@@ -1,5 +1,9 @@
 import * as Notifications from 'expo-notifications';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import {
+  getMedicationNotificationIds,
+  saveMedicationNotificationIds,
+} from './storage';
 
 /**
  * Verifica si la aplicación se está ejecutando dentro de Expo Go.
@@ -160,5 +164,100 @@ export const getScheduledAlerts = async () => {
   } catch (error) {
     console.warn('Error al obtener notificaciones programadas:', error?.message || error);
     return [];
+  }
+};
+
+/**
+ * Actualiza las notificaciones de medicamentos programadas.
+ * Cancela notificaciones anteriores de medicamentos y vuelve a programar para todos los medicamentos activos.
+ * @param {Array} medicationsList Lista de medicamentos
+ */
+export const updateMedicationNotifications = async (medicationsList = []) => {
+  if (isExpoGo()) {
+    console.warn('No se pueden programar notificaciones en Expo Go. Ejecuta la app en un Development Build.');
+    return false;
+  }
+
+  try {
+    const hasPermission = await requestNotificationPermissions();
+    if (!hasPermission) {
+      console.warn('Permisos de notificación no concedidos. No se programaron las alertas de medicamentos.');
+      return false;
+    }
+
+    // 1. Cancelar notificaciones de medicamentos anteriores
+    const previousIds = await getMedicationNotificationIds();
+    if (Array.isArray(previousIds)) {
+      for (const id of previousIds) {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(id);
+        } catch (err) {
+          console.warn(`Error al cancelar notificación de medicamento ID ${id}:`, err);
+        }
+      }
+    }
+
+    const newNotificationIds = [];
+    const triggerType = Notifications.SchedulableTriggerInputTypes?.DAILY || 'daily';
+
+    // 2. Programar notificaciones para cada medicamento
+    for (const med of medicationsList) {
+      if (!med) continue;
+
+      const frecuencia = parseInt(med.frecuencia, 10);
+      if (!frecuencia || isNaN(frecuencia) || frecuencia <= 0) {
+        continue;
+      }
+
+      const tomas = Math.floor(24 / frecuencia);
+      if (tomas <= 0) continue;
+
+      let horaInicio = 8;
+      let minutoInicio = 0;
+
+      if (med.horaInicio !== undefined && med.horaInicio !== null && med.horaInicio !== '') {
+        if (typeof med.horaInicio === 'string' && med.horaInicio.includes(':')) {
+          const parts = med.horaInicio.split(':');
+          horaInicio = parseInt(parts[0], 10) || 0;
+          minutoInicio = parseInt(parts[1], 10) || 0;
+        } else {
+          horaInicio = parseInt(med.horaInicio, 10) || 0;
+        }
+      }
+
+      if (med.minutoInicio !== undefined && med.minutoInicio !== null && med.minutoInicio !== '') {
+        minutoInicio = parseInt(med.minutoInicio, 10) || 0;
+      }
+
+      for (let i = 0; i < tomas; i++) {
+        const horaToma = (horaInicio + i * frecuencia) % 24;
+        const minutoToma = minutoInicio % 60;
+
+        const notifId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Recordatorio de Medicamento',
+            body: `Hora de tomarse ${med.nombre} - Dosis: ${med.dosis}`,
+            sound: true,
+          },
+          trigger: {
+            type: triggerType,
+            hour: horaToma,
+            minute: minutoToma,
+            repeats: true,
+          },
+        });
+
+        if (notifId) {
+          newNotificationIds.push(notifId);
+        }
+      }
+    }
+
+    // 3. Guardar IDs de notificaciones creadas
+    await saveMedicationNotificationIds(newNotificationIds);
+    return true;
+  } catch (error) {
+    console.warn('Error al actualizar las notificaciones de medicamentos:', error?.message || error);
+    return false;
   }
 };

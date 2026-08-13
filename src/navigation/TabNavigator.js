@@ -1,12 +1,13 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { HeartPulse, PlusCircle, ClipboardList, Settings } from 'lucide-react-native';
+import { HeartPulse, PlusCircle, ClipboardList, Settings, Pill } from 'lucide-react-native';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import NewRecordScreen from '../screens/NewRecordScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import MedicationsScreen from '../screens/MedicationsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -44,6 +45,8 @@ export default function TabNavigator() {
             return <HeartPulse color={color} size={size} />;
           } else if (route.name === 'Nuevo') {
             return <PlusCircle color={color} size={size} />;
+          } else if (route.name === 'Medicinas') {
+            return <Pill color={color} size={size} />;
           } else if (route.name === 'Historial') {
             return <ClipboardList color={color} size={size} />;
           } else if (route.name === 'Configuración') {
@@ -62,6 +65,11 @@ export default function TabNavigator() {
         name="Nuevo"
         component={NewRecordScreen}
         options={{ title: 'Nuevo Registro' }}
+      />
+      <Tab.Screen
+        name="Medicinas"
+        component={MedicationsScreen}
+        options={{ title: 'Medicamentos' }}
       />
       <Tab.Screen
         name="Historial"

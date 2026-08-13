@@ -4,6 +4,8 @@ import * as FileSystem from 'expo-file-system';
 const API_KEY_STORAGE_KEY = '@vitalcare_api_key';
 const RECORDS_STORAGE_KEY = '@vitalcare_records';
 const NOTIFICATION_SETTINGS_KEY = '@vitalcare_notification_settings';
+const MEDICATIONS_STORAGE_KEY = '@medications';
+const MEDICATION_NOTIFICATION_IDS_KEY = '@medication_notification_ids';
 
 /**
  * Obtiene la API Key de Gemini desde AsyncStorage
@@ -122,5 +124,94 @@ export const saveImageLocally = async (uri) => {
     console.error('Error al guardar la imagen localmente:', error);
     // En caso de fallo en copia, retornar URI original como fallback
     return uri;
+  }
+};
+
+/**
+ * Obtiene los medicamentos guardados
+ */
+export const getMedications = async () => {
+  try {
+    const medsJson = await AsyncStorage.getItem(MEDICATIONS_STORAGE_KEY);
+    return medsJson ? JSON.parse(medsJson) : [];
+  } catch (error) {
+    console.error('Error obteniendo medicamentos:', error);
+    return [];
+  }
+};
+
+/**
+ * Guarda el arreglo completo de medicamentos
+ */
+export const saveMedications = async (medicationsList) => {
+  try {
+    await AsyncStorage.setItem(MEDICATIONS_STORAGE_KEY, JSON.stringify(medicationsList));
+    return true;
+  } catch (error) {
+    console.error('Error guardando lista de medicamentos:', error);
+    throw error;
+  }
+};
+
+/**
+ * Agrega o actualiza un medicamento en la lista
+ */
+export const saveMedication = async (medication) => {
+  try {
+    const currentMeds = await getMedications();
+    const index = currentMeds.findIndex((m) => m.id === medication.id);
+    let updatedMeds;
+    if (index >= 0) {
+      updatedMeds = [...currentMeds];
+      updatedMeds[index] = medication;
+    } else {
+      updatedMeds = [medication, ...currentMeds];
+    }
+    await saveMedications(updatedMeds);
+    return updatedMeds;
+  } catch (error) {
+    console.error('Error guardando medicamento:', error);
+    throw error;
+  }
+};
+
+/**
+ * Elimina un medicamento por su ID
+ */
+export const deleteMedication = async (id) => {
+  try {
+    const currentMeds = await getMedications();
+    const updatedMeds = currentMeds.filter((m) => m.id !== id);
+    await saveMedications(updatedMeds);
+    return updatedMeds;
+  } catch (error) {
+    console.error('Error eliminando medicamento:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene los IDs de las notificaciones de medicamentos programadas
+ */
+export const getMedicationNotificationIds = async () => {
+  try {
+    const idsJson = await AsyncStorage.getItem(MEDICATION_NOTIFICATION_IDS_KEY);
+    return idsJson ? JSON.parse(idsJson) : [];
+  } catch (error) {
+    console.error('Error obteniendo IDs de notificaciones de medicamentos:', error);
+    return [];
+  }
+};
+
+/**
+ * Guarda los IDs de las notificaciones de medicamentos programadas
+ */
+export const saveMedicationNotificationIds = async (ids) => {
+  try {
+    await AsyncStorage.setItem(MEDICATION_NOTIFICATION_IDS_KEY, JSON.stringify(ids));
+    return true;
+  } catch (error) {
+    console.error('Error guardando IDs de notificaciones de medicamentos:', error);
+    throw error;
   }
 };
